@@ -87,7 +87,8 @@ That's it. That's all the controls.
 ## Implementation Details
 ### Core Components
 #### Process Management (`process.h/c`)
-- `Process` structure containing:
+- **Opaque Types:** `Process` and `ProcessArray` structures are opaque (implementation hidden from client code)
+- `Process` structure internally contains:
   - Process ID (PID) and Parent PID (PPID)
   - Username and process title
   - CPU time snapshots for differential calculation
@@ -95,9 +96,22 @@ That's it. That's all the controls.
   - Process state (Running, Sleeping, Idle, Stopped, Zombie)
   - Hierarchy flags (is_parent, is_collapsed)
 
-- `ProcessArray` for dynamic process collection
-- `process_printn()` - Debug function to print first N processes
-- `proc_array_order()` - Sorts processes by RAM usage (descending)
+- **Accessor Functions:** Getters for all process data:
+  - `proc_get_pid()`, `proc_get_user()`, `proc_get_cpu()`, `proc_get_ram()`, `proc_get_state()`, `proc_get_title()`, `proc_get_collapsed()`
+
+- **ProcessArray Management:**
+  - Opaque container for dynamic process collection
+  - `proc_array_order()` - Sorts processes by RAM usage (descending)
+  - `proc_array_delete()` - Memory cleanup
+
+- **ProcessIterator Pattern:**
+  - `proc_iter_create()` - Creates an iterator for a ProcessArray
+  - `proc_iter_next()` - Returns next non-collapsed process
+  - `proc_iter_destroy()` - Frees iterator resources
+  - Automatically skips collapsed child processes during iteration
+
+- **Debug Utilities:**
+  - `process_printn()` - Prints first N processes to console
 
 #### System Information (`sysinfo.h/c`)
 - `get_process_list()` - Main function that:
@@ -140,9 +154,12 @@ Child processes are automatically grouped under their parents:
 ### Memory Management
 
 The application:
+- Uses **opaque types** (Process, ProcessArray) for encapsulation and memory safety
 - Allocates process array with `calloc()`
 - Frees process data between refresh cycles
 - Implements `proc_delete()` and `proc_array_delete()` for cleanup
+- Uses **iterator pattern** (`ProcessIterator`) for safe process traversal
+- Properly destroys iterators with `proc_iter_destroy()` to prevent leaks
 - Main loop releases memory before each cycle to prevent leaks
 
 ## macOS Specifics
