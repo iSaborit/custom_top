@@ -16,6 +16,6 @@ typedef struct {
 } Screen;
 
 void setup_colors();
-void draw_layout(const Screen scr, const ProcessArray *processArray);
+void *ui_thread_func(void *arg);
 
 #endif // CUSTOM_TOP_UI_H

@@ -3,9 +3,11 @@
 //
 
 #include "../include/ui.h"
+#include "../include/app_state.h"
 #include "../include/utils.h"
 
 #include <ncurses.h>
+#include <unistd.h>
 #include <string.h>
 
 void setup_colors() {
@@ -25,7 +27,7 @@ static void printProcess(const Process *p, const int row) {
              get_state_string(proc_get_state(p)), proc_get_title(p));
 }
 
-void draw_layout(const Screen scr, const ProcessArray *processArray) {
+static void ui_print_box(const Screen scr) {
     attron(COLOR_PAIR(DEFAULT) | A_BOLD);
     box(stdscr, 0, 0);
     mvprintw(0, 2, "%s", " This is my own htop, but better. (It is not) ");
@@ -45,6 +47,10 @@ void draw_layout(const Screen scr, const ProcessArray *processArray) {
     truncate_string(row, header_msg, width);
     mvprintw(1, 1, "%s", row);
     attroff(COLOR_PAIR(DEFAULT) | A_REVERSE | A_BOLD);
+}
+
+static void draw_layout(const Screen scr, const ProcessArray *processArray) {
+    ui_print_box(scr);
 
     int line = 2;
     int printed = 0;
@@ -59,4 +65,32 @@ void draw_layout(const Screen scr, const ProcessArray *processArray) {
     }
 
     proc_iter_destroy(pi);
+}
+
+void *ui_thread_func(void *arg) {
+    AppState *as = (AppState *)arg;
+
+    int key = 0;
+
+    while (app_state_should_run(as)) {
+        key = getch();
+        if (key == 'q' || key == 'Q') {
+            app_state_stop(as);
+        }
+
+        Screen s;
+        getmaxyx(stdscr, s.y, s.x);
+        erase();
+        app_state_lock(as);
+        ProcessArray *data = app_state_get_data(as);
+        if (data) {
+            draw_layout(s, data);
+        }
+        refresh();
+        app_state_unlock(as);
+
+        usleep(100000);
+    }
+
+    return NULL;
 }
