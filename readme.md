@@ -176,10 +176,7 @@ The CPU usage calculation is based on elapsed time between two measurements:
 2. After 1 second delay: Measure again
 3. CPU% = (delta / elapsed_ticks) × 100%
 
-Here is the refined, professional version of your roadmap in English, following your formatting preferences for clarity and scannability.
-
 ---
-
 ## Future Enhancements
 This roadmap outlines the critical functionalities and structural improvements planned for upcoming versions to transition from a basic monitor to a robust system utility.
 ### Core Functionality & UI
