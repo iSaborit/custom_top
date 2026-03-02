@@ -4,9 +4,35 @@
 
 #include "../include/process.h"
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+struct Process {
+    int pid;
+    int ppid;
+    char user[64];
+    char title[64];
+    uint64_t _cpu_time_snapshot;
+    int ram_usage;
+    float cpu_usage;
+    int is_parent;
+    int is_collapsed;
+    int gid;
+    State state;
+};
+
+struct ProcessArray {
+    Process *p;
+    int length;
+};
+
+struct ProcessIterator {
+    const ProcessArray *pa;
+    int index;
+};
+
 
 Process *createProcess(const int pid, char title[64], const int ram, const State state) {
     Process *p = malloc(sizeof(Process));
@@ -17,23 +43,51 @@ Process *createProcess(const int pid, char title[64], const int ram, const State
     return p;
 }
 
-int cmp(const void *a, const void *b) {
+int proc_get_pid(const Process *p) {
+    return p->pid;
+}
+
+const char *proc_get_user(const Process *p) {
+    return p->user;
+}
+
+float proc_get_cpu(const Process *p){
+    return p->cpu_usage;
+}
+
+int proc_get_ram(const Process *p){
+    return p->ram_usage;
+}
+
+State proc_get_state(const Process *p){
+    return p->state;
+}
+
+const char *proc_get_title(const Process *p){
+    return p->title;
+}
+
+int proc_get_collapsed(const Process *p) {
+    return p->is_collapsed;
+}
+
+static int cmp(const void *a, const void *b) {
     const Process *pa = (const Process *)a;
     const Process *pb = (const Process *)b;
     if (pa->ram_usage < pb->ram_usage) return 1;
     else return -1;
 }
 
-void orderProcessArray(const ProcessArray *pa) {
+void proc_array_order(const ProcessArray *pa) {
     qsort(pa->p, pa->length, sizeof(Process), cmp);
 }
 
 
-void deleteProcess(Process *process) {
+void proc_delete(Process *process) {
     free(process);
 }
 
-void deleteProcessArray(ProcessArray *processArray) {
+void proc_array_delete(ProcessArray *processArray) {
     free(processArray->p);
     free(processArray);
 }

@@ -97,7 +97,7 @@ That's it. That's all the controls.
 
 - `ProcessArray` for dynamic process collection
 - `process_printn()` - Debug function to print first N processes
-- `orderProcessArray()` - Sorts processes by RAM usage (descending)
+- `proc_array_order()` - Sorts processes by RAM usage (descending)
 
 #### System Information (`sysinfo.h/c`)
 - `get_process_list()` - Main function that:
@@ -142,7 +142,7 @@ Child processes are automatically grouped under their parents:
 The application:
 - Allocates process array with `calloc()`
 - Frees process data between refresh cycles
-- Implements `deleteProcess()` and `deleteProcessArray()` for cleanup
+- Implements `proc_delete()` and `proc_array_delete()` for cleanup
 - Main loop releases memory before each cycle to prevent leaks
 
 ## macOS Specifics

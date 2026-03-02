@@ -50,7 +50,7 @@ void draw_layout(const Screen scr, const ProcessArray *processArray) {
     mvprintw(1, 1, "%s", row);
     attroff(COLOR_PAIR(DEFAULT) | A_REVERSE | A_BOLD);
 
-    orderProcessArray(processArray);
+    proc_array_order(processArray);
     int line = 2;
     int printed = 0;
     for (int i = 0; printed <= scr.y - 4; i++) {

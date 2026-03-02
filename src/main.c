@@ -32,13 +32,13 @@ int main(void) {
 
         // Liberamos la memoria antes del próximo ciclo para evitar la fuga
         if (key != 'q' && key != 'Q') {
-            deleteProcessArray(pa);
+            proc_array_delete(pa);
         }
     }
 
     endwin();
 
-    //process_printn(pa, 30);
-    deleteProcessArray(pa);
+    // process_printn(pa, 30);
+    proc_array_delete(pa);
     return 0;
 }

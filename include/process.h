@@ -7,33 +7,50 @@
 #include <stdint.h>
 #include "state.h"
 
-typedef struct {
-    int pid;
-    int ppid;
-    char user[64];
-    char title[64];
-    uint64_t _cpu_time_snapshot;
-    int ram_usage;
-    float cpu_usage;
-    int is_parent;
-    int is_collapsed;
-    int gid;
-    State state;
-} Process;
+
+typedef struct Process Process;
+typedef struct ProcessArray ProcessArray;
+typedef struct ProcessIterator ProcessIterator;
+
+/*
+ * 
+             p->pid,
+             p->user,
+             p->cpu_usage,
+             p->ram_usage,
+             get_state_string(p->state),
+             p->title);
+ *
+ *
+ * */
+
+// --- Process. 
 
 Process *createProcess(int, char [64], int, State);
+void proc_delete(Process *process);
 
-void deleteProcess(Process *process);
+int proc_get_pid(const Process *p);
+const char *proc_get_user(const Process *p);
+float proc_get_cpu(const Process *p);
+int proc_get_ram(const Process *p);
+State proc_get_state(const Process *p);
+const char *proc_get_title(const Process *p);
+int proc_get_collapsed(const Process *p);
 
-typedef struct {
-    Process *p;
-    int length;
-} ProcessArray;
 
-void deleteProcessArray(ProcessArray *processArray);
+// --- ProcessArray
 
+void proc_array_delete(ProcessArray *processArray);
+    // I gotta put an enum on how we order the pA
+void proc_array_order(const ProcessArray *pa);
+    // testing purposes
 void process_printn(ProcessArray *pa, int n);
 
-void orderProcessArray(const ProcessArray *pa);
+
+// --- ProcessIterator
+ProcessIterator *proc_iter_create(const ProcessArray *pa);
+const Process *proc_iter_next(const ProcessIterator *pi);
+void proc_iter_destroy(ProcessIterator *pi);
+
 
 #endif // CUSTOM_TOP_PROCESS_H
