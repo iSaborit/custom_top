@@ -15,13 +15,15 @@ A basic process monitoring tool for macOS written in C. Displays running process
 ```
 custom_top/
 ├── src/                    # Source files
-│   ├── main.c             # Application entry point
+│   ├── main.c             # Application entry point (spawns threads)
+│   ├── app_state.c        # Shared application state implementation
 │   ├── process.c          # Process management
 │   ├── sysinfo.c          # System information gathering
-│   ├── ui.c               # User interface rendering
+│   ├── ui.c               # User interface rendering (UI thread)
 │   ├── state.c            # State management
 │   └── utils.c            # Utility functions
 ├── include/               # Header files
+│   ├── app_state.h        # Shared application state (thread-safe)
 │   ├── process.h          # Process structures and functions
 │   ├── sysinfo.h          # System info interface
 │   ├── ui.h               # UI interface
@@ -96,11 +98,14 @@ That's it. That's all the controls.
   - Process state (Running, Sleeping, Idle, Stopped, Zombie)
   - Hierarchy flags (is_parent, is_collapsed)
 
-- **Accessor Functions:** Getters for all process data:
-  - `proc_get_pid()`, `proc_get_user()`, `proc_get_cpu()`, `proc_get_ram()`, `proc_get_state()`, `proc_get_title()`, `proc_get_collapsed()`
+- **Accessor Functions:**
+  - Getters: `proc_get_pid()`, `proc_get_ppid()`, `proc_get_gid()`, `proc_get_is_parent()`, `proc_get_user()`, `proc_get_cpu()`, `proc_get_ram()`, `proc_get_state()`, `proc_get_title()`, `proc_get_collapsed()`, `proc_get_cpu_snapshot()`
+  - Setters: `proc_set_pid()`, `proc_set_ppid()`, `proc_set_gid()`, `proc_set_is_parent()`, `proc_set_user()`, `proc_set_title_from_pid()`, `proc_set_ram()`, `proc_set_cpu()`, `proc_set_state()`, `proc_set_collapsed()`, `proc_set_cpu_snapshot()`, `proc_add_cpu()`, `proc_add_ram()`
 
 - **ProcessArray Management:**
   - Opaque container for dynamic process collection
+  - `proc_array_create()` - Allocates array with given capacity
+  - `proc_array_get()` / `proc_array_length()` / `proc_array_set_length()` - Element access
   - `proc_array_order()` - Sorts processes by RAM usage (descending)
   - `proc_array_delete()` - Memory cleanup
 
@@ -129,9 +134,18 @@ That's it. That's all the controls.
   - `proc_name()` - Get process executable name
   - `mach_absolute_time()` - High-resolution timing
 
+#### Application State (`app_state.h/c`)
+- `AppState` - Opaque struct holding the shared `ProcessArray` and a `pthread_mutex_t`
+- `app_state_create()` / `app_state_destroy()` - Lifecycle management
+- Thread-safe accessors:
+  - `app_state_set_data()` / `app_state_get_data()` - Update/read current process list
+  - `app_state_lock()` / `app_state_unlock()` - Manual mutex control for composite operations
+  - `app_state_should_run()` / `app_state_stop()` - Clean shutdown signalling
+
 #### User Interface (`ui.h/c`)
 - `setup_colors()` - Initializes ncurses color pairs (DEFAULT, ALERT, INFO)
-- `draw_layout()` - Renders the display with:
+- `ui_thread_func()` - UI thread entry point: polls for key input, redraws at ~10 fps
+- `draw_layout()` (internal) - Renders the display with:
   - Bordered box around content
   - Header with column labels
   - Process list sorted by memory usage
@@ -151,16 +165,24 @@ Child processes are automatically grouped under their parents:
 3. Special handling: kernel_task (0) and launchd (1) processes are not collapsed
 4. Aggregated resources: Child CPU usage and RAM are added to parent totals
 
+### Multi-threaded Architecture
+
+The application uses two POSIX threads managed via `pthread`:
+
+- **Data thread** (`data_thread_func` in `process.c`) — continuously fetches the process list (including the 1-second CPU delta measurement) and updates `AppState` under mutex lock.
+- **UI thread** (`ui_thread_func` in `ui.c`) — redraws the screen at ~10 fps, acquires the mutex only to read the latest `ProcessArray`, and handles keyboard input.
+
+`AppState` (`app_state.h/c`) is the shared, mutex-protected state passed to both threads. `main()` simply spawns both threads and joins them on exit.
+
 ### Memory Management
 
 The application:
-- Uses **opaque types** (Process, ProcessArray) for encapsulation and memory safety
+- Uses **opaque types** (Process, ProcessArray, AppState) for encapsulation and memory safety
 - Allocates process array with `calloc()`
-- Frees process data between refresh cycles
+- `AppState` owns the current `ProcessArray` and frees the previous one on each data update
 - Implements `proc_delete()` and `proc_array_delete()` for cleanup
 - Uses **iterator pattern** (`ProcessIterator`) for safe process traversal
 - Properly destroys iterators with `proc_iter_destroy()` to prevent leaks
-- Main loop releases memory before each cycle to prevent leaks
 
 ## macOS Specifics
 
@@ -189,7 +211,7 @@ This roadmap outlines the critical functionalities and structural improvements p
    * **Color Coding:** Visual distinction based on process state (Running, Sleeping, Zombie).
    * **Help Menu:** Instant access to keyboard shortcuts via the 'h' key.
 ### Performance & Stability
-1. **Multi-threaded Architecture:** Separation of the CPU measurement logic (which requires a 1-second delay) from the UI thread to eliminate the current interface freezing.
+1. ~~**Multi-threaded Architecture:** Separation of the CPU measurement logic (which requires a 1-second delay) from the UI thread to eliminate the current interface freezing.~~ ✅ **Done** — data and UI run in separate threads.
 2. **Data Optimization:**
    * **Lazy Loading:** Efficient rendering for large process lists.
    * **Information Caching:** Reduction of redundant system calls between refresh cycles.
@@ -208,9 +230,7 @@ This roadmap outlines the critical functionalities and structural improvements p
 
 ## Known Issues
 
-* **UI Blocking:** The 1-second delay in `get_process_list()` currently halts the entire interface during metric calculation.
-  * *Planned Fix:* Move CPU measurement to a background thread (Multithreading).
- 
+* No known blocking issues at this time.
 
 ## License
 
@@ -218,7 +238,7 @@ Created by Iker Saborit López
 
 ---
 
-**Last Updated**: February 2026
+**Last Updated**: March 2026
 
 
 
