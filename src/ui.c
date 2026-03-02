@@ -20,13 +20,9 @@ void setup_colors() {
 
 static void printProcess(const Process *p, const int row) {
     attron(COLOR_PAIR(DEFAULT));
-    mvprintw(row, 1, "%5d %-15.15s %6.1f%% %6dMB %-10.10s %s",
-             p->pid,
-             p->user,
-             p->cpu_usage,
-             p->ram_usage,
-             get_state_string(p->state),
-             p->title);
+    mvprintw(row, 1, "%5d %-15.15s %6.1f%% %6dMB %-10.10s %s", proc_get_pid(p),
+             proc_get_user(p), proc_get_cpu(p), proc_get_ram(p),
+             get_state_string(proc_get_state(p)), proc_get_title(p));
 }
 
 void draw_layout(const Screen scr, const ProcessArray *processArray) {
@@ -50,14 +46,17 @@ void draw_layout(const Screen scr, const ProcessArray *processArray) {
     mvprintw(1, 1, "%s", row);
     attroff(COLOR_PAIR(DEFAULT) | A_REVERSE | A_BOLD);
 
-    proc_array_order(processArray);
     int line = 2;
     int printed = 0;
-    for (int i = 0; printed <= scr.y - 4; i++) {
-        if (processArray->p[i].is_collapsed) {
-            continue;
-        };
+
+    proc_array_order(processArray);
+    ProcessIterator *pi = proc_iter_create(processArray);
+    const Process *p;
+
+    while ((p = proc_iter_next(pi)) != NULL && printed < scr.y - 3) {
         printed++;
-        printProcess(&processArray->p[i], line++);
+        printProcess(p, line++);
     }
+
+    proc_iter_destroy(pi);
 }

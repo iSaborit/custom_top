@@ -33,8 +33,8 @@ struct ProcessIterator {
     int index;
 };
 
-
-Process *createProcess(const int pid, char title[64], const int ram, const State state) {
+Process *createProcess(const int pid, char title[64], const int ram,
+                       const State state) {
     Process *p = malloc(sizeof(Process));
     p->pid = pid;
     p->state = state;
@@ -43,49 +43,34 @@ Process *createProcess(const int pid, char title[64], const int ram, const State
     return p;
 }
 
-int proc_get_pid(const Process *p) {
-    return p->pid;
-}
+int proc_get_pid(const Process *p) { return p->pid; }
 
-const char *proc_get_user(const Process *p) {
-    return p->user;
-}
+const char *proc_get_user(const Process *p) { return p->user; }
 
-float proc_get_cpu(const Process *p){
-    return p->cpu_usage;
-}
+float proc_get_cpu(const Process *p) { return p->cpu_usage; }
 
-int proc_get_ram(const Process *p){
-    return p->ram_usage;
-}
+int proc_get_ram(const Process *p) { return p->ram_usage; }
 
-State proc_get_state(const Process *p){
-    return p->state;
-}
+State proc_get_state(const Process *p) { return p->state; }
 
-const char *proc_get_title(const Process *p){
-    return p->title;
-}
+const char *proc_get_title(const Process *p) { return p->title; }
 
-int proc_get_collapsed(const Process *p) {
-    return p->is_collapsed;
-}
+int proc_get_collapsed(const Process *p) { return p->is_collapsed; }
 
 static int cmp(const void *a, const void *b) {
     const Process *pa = (const Process *)a;
     const Process *pb = (const Process *)b;
-    if (pa->ram_usage < pb->ram_usage) return 1;
-    else return -1;
+    if (pa->ram_usage < pb->ram_usage)
+        return 1;
+    else
+        return -1;
 }
 
 void proc_array_order(const ProcessArray *pa) {
     qsort(pa->p, pa->length, sizeof(Process), cmp);
 }
 
-
-void proc_delete(Process *process) {
-    free(process);
-}
+void proc_delete(Process *process) { free(process); }
 
 void proc_array_delete(ProcessArray *processArray) {
     free(processArray->p);
@@ -100,7 +85,8 @@ void process_printn(ProcessArray *pa, const int n) {
 
     int count = pa->length < n ? pa->length : n;
     printf("Top %d processes:\n", count);
-    printf("%-6s %-10s %-30s %-10s %-10s %-10s\n", "PID", "USER", "NAME", "RAM (MB)", "CPU (%)", "STATE");
+    printf("%-6s %-10s %-30s %-10s %-10s %-10s\n", "PID", "USER", "NAME",
+           "RAM (MB)", "CPU (%)", "STATE");
     printf("------------------------------------------------------\n");
 
     for (int i = 0; i < count; i++) {
@@ -108,12 +94,41 @@ void process_printn(ProcessArray *pa, const int n) {
             count++;
             continue;
         }
-        printf("%-6d %-10s %-30s %-10d %-10f %-10s\n",
-               pa->p[i].pid,
-               pa->p[i].user,
-               pa->p[i].title,
-               pa->p[i].ram_usage,
-               pa->p[i].cpu_usage,
-               get_state_string(pa->p[i].state));
+        printf("%-6d %-10s %-30s %-10d %-10f %-10s\n", pa->p[i].pid,
+               pa->p[i].user, pa->p[i].title, pa->p[i].ram_usage,
+               pa->p[i].cpu_usage, get_state_string(pa->p[i].state));
     }
 }
+
+ProcessIterator *proc_iter_create(const ProcessArray *pa) {
+    ProcessIterator *pi = malloc(sizeof(ProcessIterator));
+    pi->pa = pa;
+    pi->index = 0;
+
+    return pi;
+}
+
+const Process *proc_iter_next(ProcessIterator *pi) {
+    if (!pi || !pi->pa) return NULL;
+
+    while (pi->index < pi->pa->length) {
+        const Process *p = &pi->pa->p[pi->index++];
+
+        if (!p->is_collapsed) {
+            return p;
+        }
+    }
+
+    return NULL;
+}
+
+ void proc_iter_destroy(ProcessIterator *pi) {
+    if (pi != NULL){
+        free(pi);
+    }
+}
+
+// TODO
+/*
+ * void proc_iter_destroy(ProcessIterator *pi);
+ */
