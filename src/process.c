@@ -84,16 +84,24 @@ void proc_set_cpu_snapshot(Process *p, uint64_t snapshot) {
 void proc_add_cpu(Process *p, float delta) { p->cpu_usage += delta; }
 void proc_add_ram(Process *p, int delta) { p->ram_usage += delta; }
 
+static SortOrder _current_sort = SORT_BY_RAM;
+
 static int cmp(const void *a, const void *b) {
     const Process *pa = (const Process *)a;
     const Process *pb = (const Process *)b;
-    if (pa->ram_usage < pb->ram_usage)
-        return 1;
-    else
-        return -1;
+    switch (_current_sort) {
+        case SORT_BY_CPU:
+            return (pa->cpu_usage < pb->cpu_usage) - (pa->cpu_usage > pb->cpu_usage);
+        case SORT_BY_PID:
+            return pa->pid - pb->pid;
+        case SORT_BY_RAM:
+        default:
+            return (pa->ram_usage < pb->ram_usage) - (pa->ram_usage > pb->ram_usage);
+    }
 }
 
-void proc_array_order(const ProcessArray *pa) {
+void proc_array_order(const ProcessArray *pa, SortOrder order) {
+    _current_sort = order;
     qsort(pa->p, pa->length, sizeof(Process), cmp);
 }
 

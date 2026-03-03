@@ -47,15 +47,21 @@ static void ui_print_box(const Screen scr) {
     truncate_string(row, header_msg, width);
     mvprintw(1, 1, "%s", row);
     attroff(COLOR_PAIR(DEFAULT) | A_REVERSE | A_BOLD);
+
+    attron(COLOR_PAIR(DEFAULT) | A_BOLD);
+    box(stdscr, 0, 0);
+    mvprintw(scr.y - 1, 2, "%s", " (P)ID - (C)PU - (R)AM ");
+    mvprintw(0, scr.x - 2 - strlen(message), "%s", message);
+    attroff(COLOR_PAIR(DEFAULT) | A_BOLD);
 }
 
-static void draw_layout(const Screen scr, const ProcessArray *processArray) {
+static void draw_layout(const Screen scr, const ProcessArray *processArray, SortOrder order) {
     ui_print_box(scr);
 
     int line = 2;
     int printed = 0;
 
-    proc_array_order(processArray);
+    proc_array_order(processArray, order);
     ProcessIterator *pi = proc_iter_create(processArray);
     const Process *p;
 
@@ -71,25 +77,35 @@ void *ui_thread_func(void *arg) {
     AppState *as = (AppState *)arg;
 
     int key = 0;
+    app_state_set_sort(as, SORT_BY_CPU);
 
     while (app_state_should_run(as)) {
         key = getch();
         if (key == 'q' || key == 'Q') {
             app_state_stop(as);
+        } else if (key == 'r' || key == 'R') {
+            app_state_set_sort(as, SORT_BY_RAM);
+        } else if (key == 'c' || key == 'C') {
+            app_state_set_sort(as, SORT_BY_CPU);
+        } else if (key == 'p' || key == 'P') {
+            app_state_set_sort(as, SORT_BY_PID);
         }
 
         Screen s;
         getmaxyx(stdscr, s.y, s.x);
         erase();
+        SortOrder sort = app_state_get_sort(as);
         app_state_lock(as);
         ProcessArray *data = app_state_get_data(as);
         if (data) {
-            draw_layout(s, data);
+            draw_layout(s, data, sort);
+        } else {
+            ui_print_box(s);
         }
         refresh();
         app_state_unlock(as);
 
-        usleep(100000);
+        usleep(500000);
     }
 
     return NULL;

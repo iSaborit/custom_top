@@ -47,6 +47,14 @@ void proc_set_cpu_snapshot(Process *p, uint64_t snapshot);
 void proc_add_cpu(Process *p, float delta);
 void proc_add_ram(Process *p, int delta);
 
+// --- SortOrder
+
+typedef enum {
+    SORT_BY_RAM,
+    SORT_BY_CPU,
+    SORT_BY_PID,
+} SortOrder;
+
 // --- ProcessArray
 
 ProcessArray *proc_array_create(size_t capacity);
@@ -54,7 +62,7 @@ Process *proc_array_get(const ProcessArray *pa, size_t i);
 int proc_array_length(const ProcessArray *pa);
 void proc_array_set_length(ProcessArray *pa, int length);
 void proc_array_delete(ProcessArray *processArray);
-void proc_array_order(const ProcessArray *pa);
+void proc_array_order(const ProcessArray *pa, SortOrder order);
 void process_printn(ProcessArray *pa, int n);
 
 // --- ProcessIterator

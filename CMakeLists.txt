@@ -15,7 +15,8 @@ add_executable(custom_top src/main.c
         include/utils.h
         src/utils.c
         include/sysinfo.h
-        src/sysinfo.c)
+        src/sysinfo.c
+        src/app_state.c)
 
 target_include_directories(custom_top PRIVATE ${CURSES_INCLUDE_DIR})
 target_link_libraries(custom_top ${CURSES_LIBRARIES})

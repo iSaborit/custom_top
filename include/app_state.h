@@ -17,5 +17,7 @@ void app_state_lock(AppState *as);
 void app_state_unlock(AppState *as);
 int app_state_should_run(AppState *as);
 void app_state_stop(AppState *as);
+void app_state_set_sort(AppState *as, SortOrder order);
+SortOrder app_state_get_sort(AppState *as);
 
 #endif // !CUSTOM_TOP_APPSTATE_H

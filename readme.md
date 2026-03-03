@@ -5,9 +5,9 @@ A basic process monitoring tool for macOS written in C. Displays running process
 ## What It Actually Does
 
 - Displays a list of running processes with PID, user, CPU%, memory, state, and process name
-- Sorts processes by memory usage (highest first)
+- Sorts processes by CPU%, memory, or PID (user-selectable)
 - Automatically groups child processes under parent processes
-- Refreshes every second
+- Refreshes every ~100ms (UI thread) with data updated every ~1s (data thread)
 - Can exit with `q`
 
 ## Project Structure
@@ -81,10 +81,12 @@ The program will display a table of running processes with their resource usage.
 
 ### Controls
 
-- **`q` or `Q`** - Exit the application
-
-That's it. That's all the controls.
-(More to come in the future!)
+| Key | Action |
+|-----|--------|
+| `q` / `Q` | Exit the application |
+| `c` / `C` | Sort by CPU% (default) |
+| `r` / `R` | Sort by RAM |
+| `p` / `P` | Sort by PID |
 
 ## Implementation Details
 ### Core Components
@@ -106,7 +108,7 @@ That's it. That's all the controls.
   - Opaque container for dynamic process collection
   - `proc_array_create()` - Allocates array with given capacity
   - `proc_array_get()` / `proc_array_length()` / `proc_array_set_length()` - Element access
-  - `proc_array_order()` - Sorts processes by RAM usage (descending)
+  - `proc_array_order()` - Sorts processes by RAM, CPU, or PID (descending for resource fields)
   - `proc_array_delete()` - Memory cleanup
 
 - **ProcessIterator Pattern:**
@@ -140,6 +142,7 @@ That's it. That's all the controls.
 - Thread-safe accessors:
   - `app_state_set_data()` / `app_state_get_data()` - Update/read current process list
   - `app_state_lock()` / `app_state_unlock()` - Manual mutex control for composite operations
+  - `app_state_set_sort()` / `app_state_get_sort()` - Update/read current sort order
   - `app_state_should_run()` / `app_state_stop()` - Clean shutdown signalling
 
 #### User Interface (`ui.h/c`)
@@ -170,7 +173,7 @@ Child processes are automatically grouped under their parents:
 The application uses two POSIX threads managed via `pthread`:
 
 - **Data thread** (`data_thread_func` in `process.c`) — continuously fetches the process list (including the 1-second CPU delta measurement) and updates `AppState` under mutex lock.
-- **UI thread** (`ui_thread_func` in `ui.c`) — redraws the screen at ~10 fps, acquires the mutex only to read the latest `ProcessArray`, and handles keyboard input.
+- **UI thread** (`ui_thread_func` in `ui.c`) — redraws the screen at ~10 fps, reads sort order and acquires the mutex separately to read the latest `ProcessArray`, and handles keyboard input.
 
 `AppState` (`app_state.h/c`) is the shared, mutex-protected state passed to both threads. `main()` simply spawns both threads and joins them on exit.
 
@@ -206,7 +209,7 @@ This roadmap outlines the critical functionalities and structural improvements p
 1. **Interactive Navigation:** Implementation of arrow-key scrolling to explore the process list.
 2. **Process Management:** * **Expand/Collapse:** Ability to toggle child processes.
    * **Signal Control:** Integrated capability to kill or send signals to specific PIDs.
-3. **Search & Filtering:** Dynamic filtering by process name and custom sorting (CPU, Memory, PID, State).
+3. ~~**Search & Filtering:** Dynamic filtering by process name and custom sorting (CPU, Memory, PID, State).~~ ✅ **Partially done** — sorting by CPU, RAM, and PID is implemented via keyboard shortcuts.
 4. **Enhanced UX:**
    * **Color Coding:** Visual distinction based on process state (Running, Sleeping, Zombie).
    * **Help Menu:** Instant access to keyboard shortcuts via the 'h' key.
@@ -230,7 +233,7 @@ This roadmap outlines the critical functionalities and structural improvements p
 
 ## Known Issues
 
-* No known blocking issues at this time.
+* None currently known.
 
 ## License
 

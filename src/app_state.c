@@ -9,12 +9,14 @@ struct AppState {
     ProcessArray *pa;     // Los procesos actuales
     pthread_mutex_t lock; // El "semáforo" para que no choquen
     int keep_running;     // Para apagar el programa limpiamente
+    SortOrder sort_order;
 };
 
 AppState *app_state_create() {
     AppState *as = malloc(sizeof(AppState));
     as->pa = NULL;
     as->keep_running = true;
+    as->sort_order = SORT_BY_RAM;
     pthread_mutex_init(&as->lock, NULL);
     return as;
 }
@@ -58,4 +60,17 @@ void app_state_stop(AppState *as) {
     pthread_mutex_lock(&as->lock);
     as->keep_running = false;
     pthread_mutex_unlock(&as->lock);
+}
+
+void app_state_set_sort(AppState *as, SortOrder order) {
+    pthread_mutex_lock(&as->lock);
+    as->sort_order = order;
+    pthread_mutex_unlock(&as->lock);
+}
+
+SortOrder app_state_get_sort(AppState *as) {
+    pthread_mutex_lock(&as->lock);
+    SortOrder s = as->sort_order;
+    pthread_mutex_unlock(&as->lock);
+    return s;
 }
