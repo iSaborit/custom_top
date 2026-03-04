@@ -19,5 +19,10 @@ int app_state_should_run(AppState *as);
 void app_state_stop(AppState *as);
 void app_state_set_sort(AppState *as, SortOrder order);
 SortOrder app_state_get_sort(AppState *as);
+void app_state_set_search(AppState *as, const char *query);
+const char *app_state_get_search(AppState *as);
+void app_state_set_searching_mode(AppState *as, int value);
+int app_state_get_searching_mode(AppState *as);
+
 
 #endif // !CUSTOM_TOP_APPSTATE_H

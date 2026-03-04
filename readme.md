@@ -6,8 +6,9 @@ A basic process monitoring tool for macOS written in C. Displays running process
 
 - Displays a list of running processes with PID, user, CPU%, memory, state, and process name
 - Sorts processes by CPU%, memory, or PID (user-selectable)
+- Filters processes by name using an interactive search bar (`/`)
 - Automatically groups child processes under parent processes
-- Refreshes every ~100ms (UI thread) with data updated every ~1s (data thread)
+- Refreshes every ~50ms (UI thread) with data updated every ~1s (data thread)
 - Can exit with `q`
 
 ## Project Structure
@@ -77,7 +78,7 @@ The compiled executable will be at `build/custom_top`.
 ./bin/mi_programa
 ```
 
-The program will display a table of running processes with their resource usage. The processes are automatically sorted by memory usage (descending). Child processes are aggregated under their parent processes.
+The program will display a table of running processes with their resource usage. Processes are sorted by CPU% by default. Child processes are aggregated under their parent processes.
 
 ### Controls
 
@@ -87,6 +88,9 @@ The program will display a table of running processes with their resource usage.
 | `c` / `C` | Sort by CPU% (default) |
 | `r` / `R` | Sort by RAM |
 | `p` / `P` | Sort by PID |
+| `/` | Enter search mode (filter by process name) |
+| `Enter` | Confirm search |
+| `Esc` | Clear search / exit search mode |
 
 ## Implementation Details
 ### Core Components
@@ -137,23 +141,26 @@ The program will display a table of running processes with their resource usage.
   - `mach_absolute_time()` - High-resolution timing
 
 #### Application State (`app_state.h/c`)
-- `AppState` - Opaque struct holding the shared `ProcessArray` and a `pthread_mutex_t`
+- `AppState` - Opaque struct holding the shared `ProcessArray`, sort order, search state, and a `pthread_mutex_t`
 - `app_state_create()` / `app_state_destroy()` - Lifecycle management
 - Thread-safe accessors:
   - `app_state_set_data()` / `app_state_get_data()` - Update/read current process list
   - `app_state_lock()` / `app_state_unlock()` - Manual mutex control for composite operations
   - `app_state_set_sort()` / `app_state_get_sort()` - Update/read current sort order
+  - `app_state_set_search()` / `app_state_get_search()` - Update/read current search query
+  - `app_state_set_searching_mode()` / `app_state_get_searching_mode()` - Toggle interactive search input
   - `app_state_should_run()` / `app_state_stop()` - Clean shutdown signalling
 
 #### User Interface (`ui.h/c`)
 - `setup_colors()` - Initializes ncurses color pairs (DEFAULT, ALERT, INFO)
-- `ui_thread_func()` - UI thread entry point: polls for key input, redraws at ~10 fps
+- `ui_thread_func()` - UI thread entry point: polls for key input, redraws at ~20 fps
 - `draw_layout()` (internal) - Renders the display with:
-  - Bordered box around content
+  - Bordered box around content with title and key hints
   - Header with column labels
-  - Process list sorted by memory usage
+  - Process list sorted by the current sort order
   - Column format: PID | USER | CPU% | MEM(MB) | STATE | NAME
   - Skips collapsed child processes from display
+  - Bottom bar shows active search query or key legend
 
 #### State Management (`state.h/c`)
 - `State` enum: SLEEPING, RUNNING, IDLE, STOP, ZOMBIE
@@ -209,7 +216,7 @@ This roadmap outlines the critical functionalities and structural improvements p
 1. **Interactive Navigation:** Implementation of arrow-key scrolling to explore the process list.
 2. **Process Management:** * **Expand/Collapse:** Ability to toggle child processes.
    * **Signal Control:** Integrated capability to kill or send signals to specific PIDs.
-3. ~~**Search & Filtering:** Dynamic filtering by process name and custom sorting (CPU, Memory, PID, State).~~ ✅ **Partially done** — sorting by CPU, RAM, and PID is implemented via keyboard shortcuts.
+3. ~~**Search & Filtering:** Dynamic filtering by process name and custom sorting (CPU, Memory, PID, State).~~ ✅ **Done** — sorting by CPU, RAM, and PID is implemented via keyboard shortcuts; live process-name search via `/` key.
 4. **Enhanced UX:**
    * **Color Coding:** Visual distinction based on process state (Running, Sleeping, Zombie).
    * **Help Menu:** Instant access to keyboard shortcuts via the 'h' key.
